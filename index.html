@@ -3,60 +3,238 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Annas - MENYALA CICILANKU!!!</title>
-cek dulu, mau dipakai digithub ada yang perlu diubah gak
-    <script>
-        // Tunggu hingga halaman sepenuhnya dimuat
-        document.addEventListener("DOMContentLoaded", function() {
-            // Fungsi untuk menghitung cicilan
-            function hitungCicilan() {
-                // Ambil nilai input
-                const plafond = parseFloat(document.getElementById('plafond').value);
-                const tenor = parseInt(document.getElementById('tenor').value);
-                const bungaTahunan = parseFloat(document.getElementById('bunga').value);
+    <title>Perhitungan Cicilan</title>
+    <style>
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 8px;
+            text-align: center;
+        }
+        label {
+            margin-top: 10px;
+            display: block;
+        }
 
-                // Validasi input
-                if (isNaN(plafond) || isNaN(tenor) || isNaN(bungaTahunan) || plafond <= 0 || tenor <= 0 || bungaTahunan <= 0) {
-                    document.getElementById('result').innerText = "Harap masukkan nilai yang valid.";
-                    return;
-                }
+        /* CSS untuk efek kelap kelip pada teks */
+        .blink {
+            animation: blinkAnimation 1s infinite;
+        }
 
-                // Hitung bunga per bulan
-                const bungaBulanan = bungaTahunan / 12 / 100;
-
-                // Hitung cicilan bulanan
-                const cicilan = plafond * bungaBulanan / (1 - Math.pow(1 + bungaBulanan, -tenor));
-
-                // Tampilkan hasil
-                document.getElementById('result').innerText = 
-                    Cicilan Bulanan: Rp ${cicilan.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")};
+        @keyframes blinkAnimation {
+            0% {
+                color: black;
             }
+            25% {
+                color: red;
+            }
+            50% {
+                color: blue;
+            }
+            75% {
+                color: green;
+            }
+            100% {
+                color: black;
+            }
+        }
 
-            // Menambahkan event listener untuk tombol
-            const hitungButton = document.getElementById("hitungButton");
-            hitungButton.addEventListener("click", hitungCicilan);
-        });
-    </script>
+        /* Menambahkan margin dan ukuran teks pada kalimat "SING SABAR YO!!!" */
+        #resultText {
+            font-weight: bold;
+            font-size: 24px;
+            margin-top: 20px;
+        }
+
+        /* Styling untuk teks "Support dengan beli madu" dengan efek kelap-kelip dan ukuran font besar */
+        #supportText {
+            font-weight: bold;
+            font-size: 28px; /* Ukuran font lebih besar dari "SING SABAR YO!!!" */
+            margin-top: 10px;
+            animation: blinkAnimation 1s infinite; /* Menambahkan efek kelap kelip */
+        }
+
+        #supportText a {
+            color: blue;
+            text-decoration: none;
+        }
+
+        #supportText a:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
-    <h1>Annas - MENYALA CICILANKU!!!</h1>
 
-    <!-- Input untuk plafond -->
-    <label for="plafond">Plafond Pinjaman (Rp):</label>
-    <input type="number" id="plafond" placeholder="Masukkan jumlah pinjaman" inputmode="decimal"><br><br>
+<h2>Form Perhitungan Cicilan</h2>
 
-    <!-- Input untuk tenor -->
-    <label for="tenor">Tenor (bulan):</label>
-    <input type="number" id="tenor" placeholder="Masukkan jumlah bulan" inputmode="numeric"><br><br>
+<!-- Form Input Data -->
+<form id="loanForm">
+    <label for="plafond">Plafond Pinjaman (Rupiah)</label>
+    <input type="number" id="plafond" name="plafond" required><br>
 
-    <!-- Input untuk bunga -->
-    <label for="bunga">Bunga Tahunan (%):</label>
-    <input type="number" id="bunga" placeholder="Masukkan bunga tahunan" inputmode="decimal"><br><br>
+    <label for="rate">Suku Bunga (%)</label>
+    <input type="number" id="rate" name="rate" required><br>
 
-    <!-- Tombol untuk menghitung -->
-    <button id="hitungButton">Hitung Cicilan</button>
+    <label for="period">Periode (bulan)</label>
+    <input type="number" id="period" name="period" required><br>
+
+    <button type="button" id="calculateButton">Hitung Cicilan</button>
+    <button type="button" onclick="downloadXLS()">Download as XLS</button>
+</form>
+
+<!-- Kolom B4 untuk Cicilan Bulanan -->
+<h3>Cicilan Bulanan:</h3>
+<p id="monthlyPayment" style="font-weight: bold; font-size: 20px;"></p>
+
+<!-- Tampilkan teks "SING SABAR YO!!!" setelah hitung cicilan -->
+<p id="resultText" style="display: none;">SING SABAR YO!!!</p>
+
+<!-- Teks Support dengan link Shopee -->
+<p id="supportText" style="display: none;">
+    Support dengan beli madu saya di toko saya di Shopee! 
+    <a href="https://id.shp.ee/72XCQNT" target="_blank">Click here</a>
+</p>
+
+<!-- Tabel Hasil Perhitungan -->
+<table id="resultTable" style="display:none;">
+    <thead>
+        <tr>
+            <th>Bulan</th>
+            <th>Pokok yang Dibayar</th>
+            <th>Bunga yang Dibayar</th>
+            <th>Total Pembayaran</th>
+            <th>Sisa Hutang Pokok</th>
+        </tr>
+    </thead>
+    <tbody id="resultBody"></tbody>
+</table>
+
+<script>
+// Function to calculate cicilan
+function calculate() {
+    var plafond = parseFloat(document.getElementById('plafond').value);  // Plafond Pinjaman
+    var period = document.getElementById('period').value;  // Periode (bulan)
+    var rate = parseFloat(document.getElementById('rate').value) / 100;  // Suku Bunga (dalam persen)
+
+    // Validate inputs before calculation
+    if (isNaN(plafond) || isNaN(rate) || isNaN(period) || plafond <= 0 || rate <= 0 || period <= 0) {
+        alert("Silakan masukkan nilai yang valid untuk semua kolom.");
+        return;
+    }
+
+    // Calculate Cicilan using PMT formula
+    var monthlyRate = rate / 12;
+    var cicilan = (plafond * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -period));
+
+    // Display Cicilan Bulanan
+    document.getElementById('monthlyPayment').innerText = formatRupiah(cicilan.toFixed(0));
+
+    // Tampilkan teks "SING SABAR YO!!!" setelah menghitung cicilan
+    var resultText = document.getElementById('resultText');
+    resultText.innerText = "SING SABAR YO!!!";
+    resultText.classList.add("blink");  // Tambahkan efek kelap-kelip
+    resultText.style.display = 'block'; // Menampilkan teks "SING SABAR YO!!!"
+
+    // Tampilkan teks "Support" setelah menghitung cicilan
+    var supportText = document.getElementById('supportText');
+    supportText.style.display = "block"; // Menampilkan teks Support
+    supportText.classList.add("blink"); // Tambahkan efek kelap-kelip
+
+    // Clear previous results
+    var resultBody = document.getElementById('resultBody');
+    resultBody.innerHTML = '';
+
+    // Loop for each month
+    var remainingPrincipal = plafond;
+    var totalPokokTerbayar = 0;
+
+    for (var i = 1; i <= period; i++) {
+        var bungaBulan = remainingPrincipal * (rate / 12);
+        var pokokBulan = cicilan - bungaBulan;
+        remainingPrincipal -= pokokBulan;
+        totalPokokTerbayar += pokokBulan;
+
+        // Append row for the month
+        var row = document.createElement('tr');
+        row.innerHTML = `
+            <td>Bulan ${i}</td>
+            <td>${formatRupiah(pokokBulan.toFixed(0))}</td>
+            <td>${formatRupiah(bungaBulan.toFixed(0))}</td>
+            <td>${formatRupiah(cicilan.toFixed(0))}</td>
+            <td>${formatRupiah(remainingPrincipal.toFixed(0))}</td>
+        `;
+        resultBody.appendChild(row);
+    }
+
+    // Show the result table
+    document.getElementById('resultTable').style.display = 'table';
+}
+
+// Function to format number as Rupiah
+function formatRupiah(amount) {
+    var number_string = amount.replace(/[^,\d]/g, '').toString(),
+        split = number_string.split(','),
+        sisa = split[0].length % 3,
+        rupiah = split[0].substr(0, sisa),
+        ribuan = split[0].substr(sisa).match(/\d{3}/g);
     
-    <!-- Area hasil -->
-    <p id="result"></p>
+    if (ribuan) {
+        separator = sisa ? '.' : '';
+        rupiah += separator + ribuan.join('.');
+    }
+
+    rupiah = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
+    return 'Rp. ' + rupiah;
+}
+
+// Function to download table as XLS
+function downloadXLS() {
+    var table = document.getElementById("resultTable");
+    var rows = table.getElementsByTagName("tr");
+    var xls = "<table border='1'><tr>";
+    
+    // Create table header
+    for (var i = 0; i < rows[0].cells.length; i++) {
+        xls += "<th>" + rows[0].cells[i].innerHTML + "</th>";
+    }
+    xls += "</tr>";
+    
+    // Create table rows
+    for (var i = 1; i < rows.length; i++) {
+        xls += "<tr>";
+        for (var j = 0; j < rows[i].cells.length; j++) {
+            xls += "<td>" + rows[i].cells[j].innerHTML + "</td>";
+        }
+        xls += "</tr>";
+    }
+    xls += "</table>";
+
+    // Create a temporary link to trigger the download
+    var downloadLink = document.createElement('a');
+    downloadLink.href = 'data:application/vnd.ms-excel,' + encodeURIComponent(xls);
+    downloadLink.download = 'Perhitungan_Cicilan.xls';
+    downloadLink.click();
+}
+
+// Reset form inputs on page load
+window.onload = function() {
+    document.getElementById('loanForm').reset();
+    document.getElementById('resultText').style.display = 'none'; // Menyembunyikan teks "SING SABAR YO!!!"
+    document.getElementById('supportText').style.display = 'none'; // Menyembunyikan teks "Support"
+    document.getElementById('resultTable').style.display = 'none'; // Menyembunyikan tabel
+
+    // Ensure button click works on iPhone/iPad
+    var calculateButton = document.getElementById('calculateButton');
+    calculateButton.addEventListener('click', calculate);
+}
+</script>
+
 </body>
 </html>
