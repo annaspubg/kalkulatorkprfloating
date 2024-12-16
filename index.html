@@ -163,13 +163,13 @@ function calculate() {
 
         // Append row for the month
         var row = document.createElement('tr');
-        row.innerHTML = 
+        row.innerHTML = `
             <td>Bulan ${i}</td>
             <td>${formatRupiah(pokokBulan.toFixed(0))}</td>
             <td>${formatRupiah(bungaBulan.toFixed(0))}</td>
             <td>${formatRupiah(cicilan.toFixed(0))}</td>
             <td>${formatRupiah(remainingPrincipal.toFixed(0))}</td>
-        ;
+        `;
         resultBody.appendChild(row);
     }
 
