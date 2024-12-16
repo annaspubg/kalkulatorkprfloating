@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Annas - MENYALA CICILANKU!!!</title>
+    <script>
+        // Tunggu hingga halaman sepenuhnya dimuat
+        document.addEventListener("DOMContentLoaded", function() {
+            // Fungsi untuk menghitung cicilan
+            function hitungCicilan() {
+                // Ambil nilai input
+                const plafond = parseFloat(document.getElementById('plafond').value);
+                const tenor = parseInt(document.getElementById('tenor').value);
+                const bungaTahunan = parseFloat(document.getElementById('bunga').value);
+
+                // Validasi input
+                if (isNaN(plafond) || isNaN(tenor) || isNaN(bungaTahunan) || plafond <= 0 || tenor <= 0 || bungaTahunan <= 0) {
+                    document.getElementById('result').innerText = "Harap masukkan nilai yang valid.";
+                    return;
+                }
+
+                // Hitung bunga per bulan
+                const bungaBulanan = bungaTahunan / 12 / 100;
+
+                // Hitung cicilan bulanan
+                const cicilan = plafond * bungaBulanan / (1 - Math.pow(1 + bungaBulanan, -tenor));
+
+                // Tampilkan hasil
+                document.getElementById('result').innerText = 
+                    `Cicilan Bulanan: Rp ${cicilan.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+            }
+
+            // Menambahkan event listener untuk tombol
+            const hitungButton = document.getElementById("hitungButton");
+            hitungButton.addEventListener("click", hitungCicilan);
+        });
+    </script>
+</head>
+<body>
+    <h1>Annas - MENYALA CICILANKU!!!</h1>
+
+    <!-- Input untuk plafond -->
+    <label for="plafond">Plafond Pinjaman (Rp):</label>
+    <input type="number" id="plafond" placeholder="Masukkan jumlah pinjaman" inputmode="decimal"><br><br>
+
+    <!-- Input untuk tenor -->
+    <label for="tenor">Tenor (bulan):</label>
+    <input type="number" id="tenor" placeholder="Masukkan jumlah bulan" inputmode="numeric"><br><br>
+
+    <!-- Input untuk bunga -->
+    <label for="bunga">Bunga Tahunan (%):</label>
+    <input type="number" id="bunga" placeholder="Masukkan bunga tahunan" inputmode="decimal"><br><br>
+
+    <!-- Tombol untuk menghitung -->
+    <button id="hitungButton">Hitung Cicilan</button>
+    
+    <!-- Area hasil -->
+    <p id="result"></p>
+</body>
+</html>
